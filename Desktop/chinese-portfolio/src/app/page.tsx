@@ -2,7 +2,7 @@
 import EducationContent from '@/components/sections/EducationContent'
 import ProjectsContent from '@/components/sections/ProjectsContent'
 import SkillsContent from '@/components/sections/SkillsContent'
-import FloatingBoat from '@/components/effects/FloatingBoat' // Renamed from MountainBackground
+import FloatingBoat from '@/components/effects/FloatingBoat'
 
 export default function Home() {
   return (
@@ -11,8 +11,11 @@ export default function Home() {
       <section id="home" className="snap-start h-screen relative overflow-hidden">
         <FloatingBoat />
         <div className="relative z-10 h-full flex flex-col items-center justify-center text-center">
-          <h1 className="text-5xl font-bold mb-4 text-white drop-shadow-lg">Nature-Inspired Developer</h1>
-          <p className="text-xl text-white/90 drop-shadow-md">Scroll to explore my journey</p>
+          <h1 className="text-5xl font-bold mb-4 text-white drop-shadow-lg">Welcome to my profile</h1>
+          <p className="text-xl text-white/90 drop-shadow-md">
+            Click to navigate
+            <span className="block mt-2 text-sm animate-pulse">↓ Scroll to explore ↓</span>
+          </p>
         </div>
       </section>
 
