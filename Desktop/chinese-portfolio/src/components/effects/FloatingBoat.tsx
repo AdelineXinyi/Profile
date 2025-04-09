@@ -1,7 +1,7 @@
 'use client'
 
 import { motion, AnimatePresence } from 'framer-motion'
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useRef, useEffect } from 'react'
 import WaterRipples from './WaterRipples'
 
 const sections = [
@@ -13,11 +13,11 @@ const sections = [
 
 export default function FloatingBoat() {
   const [showMenu, setShowMenu] = useState(false)
-  
+  const menuRef = useRef<HTMLDivElement>(null)
+
   const toggleMenu = useCallback(() => {
-    console.log("Boat clicked! Current menu state:", showMenu)
-    setShowMenu(prevState => !prevState)
-  }, [showMenu])
+    setShowMenu(prev => !prev)
+  }, [])
 
   const handleScroll = useCallback((id: string) => {
     document.getElementById(id)?.scrollIntoView({
@@ -27,9 +27,26 @@ export default function FloatingBoat() {
     setShowMenu(false)
   }, [])
 
+  // 🔁 Close menu when clicking outside of it
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setShowMenu(false)
+      }
+    }
+
+    if (showMenu) {
+      document.addEventListener('mousedown', handleClickOutside)
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [showMenu])
+
   return (
     <>
-      {/* Layer 1: Full Static Mountain Background (bottom layer) */}
+      {/* Layer 1: Full Static Mountain Background */}
       <div 
         className="fixed inset-0 -z-10 bg-[url('/images/mountain-bg.png')]"
         style={{
@@ -39,10 +56,10 @@ export default function FloatingBoat() {
         }}
       />
       
-      {/* Layer 2: Water Ripples (above mountain, below boat) */}
+      {/* Layer 2: Water Ripples */}
       <WaterRipples />
       
-      {/* Layer 3: Clickable Boat Container - This is key */}
+      {/* Layer 3: Floating Boat */}
       <div className="fixed inset-0 z-20 pointer-events-none">
         <motion.div
           className="absolute bottom-[10%] left-1/2 w-40 h-20 bg-[url('/images/boat.png')] bg-contain bg-no-repeat cursor-pointer pointer-events-auto"
@@ -68,10 +85,11 @@ export default function FloatingBoat() {
         />
       </div>
       
-      {/* Navigation Menu (appears when boat is clicked) */}
+      {/* Layer 4: Navigation Menu */}
       <AnimatePresence>
         {showMenu && (
           <motion.div
+            ref={menuRef}
             className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white/90 backdrop-blur-sm rounded-lg shadow-xl z-50 p-6 min-w-[200px]"
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -93,9 +111,6 @@ export default function FloatingBoat() {
           </motion.div>
         )}
       </AnimatePresence>
-
-     
-
     </>
   )
 }
