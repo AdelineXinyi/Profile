@@ -62,7 +62,7 @@ export default function FloatingBoat() {
       {/* Layer 3: Floating Boat */}
       <div className="fixed inset-0 z-20 pointer-events-none">
         <motion.div
-          className="absolute bottom-[10%] left-1/2 w-40 h-20 bg-[url('/images/boat.png')] bg-contain bg-no-repeat cursor-pointer pointer-events-auto"
+          className="absolute bottom-[5%] left-1/2 w-40 h-20 bg-[url('/images/boat.png')] bg-contain bg-no-repeat cursor-pointer pointer-events-auto"
           initial={{ y: 0 }}
           animate={{
             y: [-8, 8, -8],
