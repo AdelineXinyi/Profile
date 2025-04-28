@@ -1,3 +1,4 @@
+///app/api/vending-machine/route.ts
 import { NextResponse } from "next/server";
 import { auth } from "~/server/auth";
 import { db } from "~/server/db";

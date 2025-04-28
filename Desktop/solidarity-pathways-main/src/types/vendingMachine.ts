@@ -1,3 +1,4 @@
+///types/vendingMachine.ts
 import type { Prisma } from "@prisma/client";
 import type { Coordinates } from "./geolocation";
 

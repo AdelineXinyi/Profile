@@ -1,3 +1,4 @@
+//routing-map.tsx
 "use client";
 
 /* eslint-disable react-hooks/exhaustive-deps */
@@ -7,6 +8,16 @@
 import type L from "leaflet";
 import type { LatLngExpression, Map as LeafletMap, PathOptions } from "leaflet";
 import type { MouseEventHandler } from "react";
+import {
+  Sheet,
+  SheetClose,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "~/components/ui/sheet";
 import {
   forwardRef,
   useEffect,
@@ -54,6 +65,10 @@ import { MapPopup } from "~/components/map/map-popup";
 import { RouteMarker } from "~/components/map/route-marker";
 
 import { MapViewButton } from "./map-view-button";
+import { VendingMachine } from "~/types/vendingMachine";
+
+
+
 
 type Props = {
   className?: string;
@@ -72,11 +87,15 @@ const RoutingMap = forwardRef<MapRef, Props>(({ className }, ref) => {
   const { defaultActions } = useDefaultMutationActions({
     invalidateEntities: ["driver", "vehicle", "routePlan", "job", "customer"],
   });
-
+  //xinyi
+  const apiContext = api.useUtils();
+  //xinyi
   const mapRef = useRef<LeafletMap>(null);
 
   const [latLng, setLatLng] = useState<L.LatLng | null>(null);
   const [activeDrivers, setActiveDrivers] = useState<CoordMap>({});
+  //xinyi
+  const [selectedVendingMachine, setSelectedVendingMachine] = useState<VendingMachine | null>(null);
 
   const { setSelectedJobIds, selectedJobIds } = useClient();
   const { currentDepot } = useDepot();
@@ -97,7 +116,20 @@ const RoutingMap = forwardRef<MapRef, Props>(({ className }, ref) => {
   const createVehicleBundle =
     api.driver.createByLatLng.useMutation(defaultActions);
   const createJobBundle = api.job.createByLatLng.useMutation(defaultActions);
-
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars, @typescript-eslint/no-unsafe-call
+  const createVendingMachine = api.vendingMachine.create.useMutation({
+    onSuccess: async () => {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+      await apiContext.vendingMachine.getAll.invalidate();
+    },
+    onError: (error) => {
+      console.error(error);
+    },
+  });
+  const getVendingMachines = api.vendingMachine.getAll.useQuery(undefined, {
+    enabled: true,
+  });
+  
   const addDriverByLatLng = async ({ latitude, longitude }: Coordinates) => {
     await createVehicleBundle.mutateAsync({
       latitude,
@@ -116,6 +148,17 @@ const RoutingMap = forwardRef<MapRef, Props>(({ className }, ref) => {
     });
   };
 
+
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const addVendingMachineByLatLng = async ({ latitude, longitude }: Coordinates) => {
+    await createVendingMachine.mutateAsync({
+      name: "New Vending Machine",
+      coordinates: { latitude, longitude },
+      address: undefined,
+      inventory: {},
+    });
+  };
+  
   useImperativeHandle(ref, () => ({
     reactLeafletMap: mapRef.current,
   }));
@@ -238,6 +281,28 @@ const RoutingMap = forwardRef<MapRef, Props>(({ className }, ref) => {
                 />
               </RouteMarker>
             )}
+
+            
+            {getVendingMachines.data?.map((vending) => (
+              <RouteMarker
+                key={vending.id}
+                id={vending.id}
+                variant="depot"
+                position={[
+                  vending.coordinates.latitude,
+                  vending.coordinates.longitude,
+                ]}
+                color={5}
+                onClick={() => setSelectedVendingMachine(vending)} // <= 这里
+              >
+                <div className="flex flex-col">
+                  <span className="font-semibold">{vending.name ?? "Unnamed Vending"}</span>
+                  {vending.address && (
+                    <span className="text-xs">{vending.address}</span>
+                  )}
+                </div>
+              </RouteMarker>
+            ))}
 
             {activeDrivers &&
               Object.keys(activeDrivers).map(async (vehicleId) => {
@@ -398,9 +463,50 @@ const RoutingMap = forwardRef<MapRef, Props>(({ className }, ref) => {
                 </div>
               </div>
             </ContextMenuItem>
+
+            <ContextMenuItem
+              onClick={() =>
+                addVendingMachineByLatLng({
+                  latitude: latLng.lat,
+                  longitude: latLng.lng,
+                })
+              }
+            >
+              <div className="flex flex-col items-center justify-center">
+                <div>Add Vending Machine here</div>
+                <div className="text-sm text-gray-500">
+                  ({latLng?.lat.toFixed(2) ?? 0}, {latLng?.lng.toFixed(2) ?? 0})
+                </div>
+              </div>
+            </ContextMenuItem>
           </ContextMenuContent>
         )}
       </ContextMenu>
+
+      
+      {selectedVendingMachine && (
+      <Sheet open={!!selectedVendingMachine} onOpenChange={(open) => { if (!open) setSelectedVendingMachine(null); }}>
+        <SheetContent side="right" className="bg-white">
+          <SheetHeader>
+            <SheetTitle>{selectedVendingMachine.name ?? "Unnamed Vending Machine"}</SheetTitle>
+            <SheetDescription>
+              {selectedVendingMachine.address ?? "No address available"}
+            </SheetDescription>
+          </SheetHeader>
+          <div className="py-4">
+            <h3 className="text-sm font-semibold mb-2">Inventory</h3>
+            <ul className="list-disc pl-5">
+              {Object.entries(selectedVendingMachine.inventory).map(([item, qty]) => (
+                <li key={item}>
+                  {item}: {qty}
+                </li>
+              ))}
+            </ul>
+          </div>
+        </SheetContent>
+      </Sheet>
+    )}
+
     </>
   );
 });
