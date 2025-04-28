@@ -96,6 +96,7 @@ const RoutingMap = forwardRef<MapRef, Props>(({ className }, ref) => {
   const [activeDrivers, setActiveDrivers] = useState<CoordMap>({});
   //xinyi
   const [selectedVendingMachine, setSelectedVendingMachine] = useState<VendingMachine | null>(null);
+  const [newName, setNewName] = useState<string>("");
 
   const { setSelectedJobIds, selectedJobIds } = useClient();
   const { currentDepot } = useDepot();
@@ -128,6 +129,14 @@ const RoutingMap = forwardRef<MapRef, Props>(({ className }, ref) => {
   });
   const getVendingMachines = api.vendingMachine.getAll.useQuery(undefined, {
     enabled: true,
+  });
+  const updateVendingMachine = api.vendingMachine.update.useMutation({
+    onSuccess: async () => {
+      await apiContext.vendingMachine.getAll.invalidate();
+    },
+    onError: (error) => {
+      console.error(error);
+    },
   });
   
   const addDriverByLatLng = async ({ latitude, longitude }: Coordinates) => {
@@ -293,7 +302,10 @@ const RoutingMap = forwardRef<MapRef, Props>(({ className }, ref) => {
                   vending.coordinates.longitude,
                 ]}
                 color={5}
-                onClick={() => setSelectedVendingMachine(vending)} // <= 这里
+                onClick={() => {
+                  setSelectedVendingMachine(vending);
+                  setNewName(vending.name ?? "");
+                }}
               >
                 <div className="flex flex-col">
                   <span className="font-semibold">{vending.name ?? "Unnamed Vending"}</span>
@@ -485,27 +497,50 @@ const RoutingMap = forwardRef<MapRef, Props>(({ className }, ref) => {
 
       
       {selectedVendingMachine && (
-      <Sheet open={!!selectedVendingMachine} onOpenChange={(open) => { if (!open) setSelectedVendingMachine(null); }}>
-        <SheetContent side="right" className="bg-white">
-          <SheetHeader>
-            <SheetTitle>{selectedVendingMachine.name ?? "Unnamed Vending Machine"}</SheetTitle>
-            <SheetDescription>
-              {selectedVendingMachine.address ?? "No address available"}
-            </SheetDescription>
-          </SheetHeader>
-          <div className="py-4">
-            <h3 className="text-sm font-semibold mb-2">Inventory</h3>
-            <ul className="list-disc pl-5">
-              {Object.entries(selectedVendingMachine.inventory).map(([item, qty]) => (
-                <li key={item}>
-                  {item}: {qty}
-                </li>
-              ))}
-            </ul>
-          </div>
-        </SheetContent>
-      </Sheet>
-    )}
+  <Sheet open={!!selectedVendingMachine} onOpenChange={(open) => { if (!open) setSelectedVendingMachine(null); }}>
+    <SheetContent side="right" className="bg-white">
+      <SheetHeader>
+        <SheetTitle>Edit Vending Machine</SheetTitle>
+        <SheetDescription>
+          <input
+            className="border border-gray-300 rounded-md p-2 mt-2 w-full"
+            value={newName}
+            onChange={(e) => setNewName(e.target.value)}
+            placeholder="Enter vending machine name"
+          />
+        </SheetDescription>
+      </SheetHeader>
+      <div className="py-4">
+        <h3 className="text-sm font-semibold mb-2">Inventory</h3>
+        <ul className="list-disc pl-5">
+          {Object.entries(selectedVendingMachine.inventory).map(([item, qty]) => (
+            <li key={item}>
+              {item}: {qty}
+            </li>
+          ))}
+        </ul>
+      </div>
+      <SheetFooter>
+        <button
+          className="mt-4 bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+          onClick={async () => {
+            if (!selectedVendingMachine) return;
+            await updateVendingMachine.mutateAsync({
+              id: selectedVendingMachine.id,
+              data: {
+                name: newName,
+              },
+            });
+            await apiContext.vendingMachine.getAll.invalidate();
+            setSelectedVendingMachine(null);
+          }}
+        >
+          Save Changes
+        </button>
+      </SheetFooter>
+    </SheetContent>
+  </Sheet>
+)}
 
     </>
   );
